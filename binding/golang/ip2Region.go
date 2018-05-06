@@ -9,8 +9,8 @@ import (
 )
 
 const (
-	INDEX_BLOCK_LENGTH = 12
-	TOTAL_HEADER_LENGTH = 4096
+	INDEX_BLOCK_LENGTH  = 12
+	TOTAL_HEADER_LENGTH = 8192
 )
 
 var err error
@@ -46,6 +46,10 @@ type IpInfo struct {
 	Province string
 	City     string
 	ISP      string
+}
+
+func (ip IpInfo)String() string {
+	return strconv.FormatInt(ip.CityId, 10) + "|" + ip.Country + "|" + ip.Region + "|" + ip.Province + "|" + ip.City + "|" + ip.ISP
 }
 
 func getIpInfo(cityId int64, line []byte) IpInfo {
