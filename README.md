@@ -35,7 +35,7 @@ maven仓库地址：
 <dependency>
     <groupId>org.lionsoul</groupId>
     <artifactId>ip2region</artifactId>
-    <version>1.4</version>
+    <version>1.7</version>
 </dependency>
 ```
 nuget安装命令
@@ -44,14 +44,7 @@ Install-Package IP2Region
 ```
 
 ### 5. 测试程序：
-c#:
-```shell
-cd IP2Region_ConsoleTest
-dotnet run
-example result:
-请输入IP地址：
-36.149.160.55
-```
+C# 和 Node.js，请具体参考文件夹中README.md 说明。
 
 java: 
 ```shell

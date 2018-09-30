@@ -16,6 +16,7 @@ META-INF/
 
 # vim swp file #
 *.swp
+.idea
 
 # binding
 /binding/java/classes/
@@ -24,3 +25,19 @@ META-INF/
 /binding/java/*.jar
 
 /binding/c/testSearcher
+
+# rust
+Cargo.lock
+target
+
+
+# VS ignore cases
+/**/*.sln
+/binding/c#/**/.vs/
+/binding/c#/**/packages
+/binding/c#/**/bin
+/binding/c#/**/obj
+
+# Nodejs
+/binding/nodejs/tests/unitTests/__snapshots__
+/binding/nodejs/coverage
