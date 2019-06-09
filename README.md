@@ -3,7 +3,13 @@ ip2region - 最自由的ip地址查询库，ip到地区的映射库，提供Bina
 ### 1. 99.9%准确率，定时更新：
 
 数据聚合了一些知名ip到地名查询提供商的数据，这些是他们官方的的准确率，经测试着实比纯真啥的准确多了。<br />
-每次聚合一下数据需要1-2天，会不定时更新。
+每次聚合一下数据需要1-2天，会不定时更新。<br /><br />
+ip2region的数据聚合自以下服务商的开放API或者数据(升级程序每秒请求次数2到4次): <br />
+01, &gt;80%, 淘宝IP地址库, [http://ip.taobao.com/](http://ip.taobao.com/) <br />
+02, ≈10%, GeoIP, [https://geoip.com/](https://geoip.com/) <br />
+03, ≈2%, 纯真IP库, [http://www.cz88.net/](http://www.cz88.net/) <br />
+<b>备注：</b>如果上述开放API或者数据都不给开发时ip2region将停止数据的更新服务，目前是2~3个月更新一次。
+
 
 ### 2. 标准化的数据格式：
 
@@ -18,7 +24,7 @@ ip2region - 最自由的ip地址查询库，ip到地区的映射库，提供Bina
 
 ### 4. 多查询客户端的支持，0.0x毫秒级别的查询
 
-已经集成的客户端有：java, C#, php, c, python，nodejs，php扩展(支持linux, php5, php7版本已支持)，golang。
+已经集成的客户端有：java、C#、php、c、python、nodejs、php扩展(php5和php7)、golang、rust、lua、lua_c。
 
     提供了两种查询算法，响应时间如下：
     客户端/binary算法/b-tree算法/Memory算法：
@@ -27,6 +33,8 @@ ip2region - 最自由的ip地址查询库，ip到地区的映射库，提供Bina
     php/0.x毫秒/0.1x毫秒/0.1x毫秒
     c/0.0x毫秒/0.0x毫秒/0.00x毫秒(b-tree算法基本稳定在0.02x毫秒级别)
     python/0.x毫秒/0.1x毫秒/未知
+    lua/0.x毫秒/0.x毫秒/0.x毫秒
+    lua_c/0.0x毫秒/0.0x毫秒/0.00x毫秒
 
 任何客户端b-tree都比binary算法快，当然Memory算法固然是最快的！
 
@@ -44,7 +52,7 @@ Install-Package IP2Region
 ```
 
 ### 5. 测试程序：
-C# 和 Node.js，请具体参考文件夹中README.md 说明。
+C#、Node.js、lua_c的测试请具体参考文件夹中README.md 说明。
 
 java: 
 ```shell
@@ -70,6 +78,12 @@ python:
 python binding/python/testSearcher.py ./data/ip2region.db
 ```
 
+lua: 
+```shell
+cd binding/lua/
+lua testSearcher.lua ../../data/ip2region.db
+```
+
 均会看到如下界面：
 ```shell
 initializing  B-tree ... 
@@ -89,9 +103,12 @@ p2region>> 101.105.35.57
 
 ### 6. 如何生成ip2region.db文件
 
+从1.8版本开始，ip2region开源了ip2region.db生成程序的java实现，提供了ant编译支持，编译后会得到以下提到的dbMaker-{version}.jar，对于需要研究生成程序的或者更改自定义生成配置的请参考${ip2region_root}/maker/java内的java源码。
+
+
 从ip2region 1.2.2版本开始里面提交了一个dbMaker-{version}.jar的可以执行jar文件，用它来完成这个工作：
 * 1, 确保你安装好了java环境（不玩Java的童鞋就自己谷歌找找拉，临时用一用，几分钟的事情）
-* 2, cd到ip2region的根目录，然后运行如下命令：
+* 2, cd到${ip2region_root}/maker/java，然后运行如下命令：
 
 ```shell
 java -jar dbMaker-{version}.jar -src 文本数据文件 -region 地域csv文件 [-dst 生成的ip2region.db文件的目录]
@@ -105,7 +122,7 @@ java -jar dbMaker-{version}.jar -src 文本数据文件 -region 地域csv文件 
 * 4, 默认的ip2region.db文件生成命令:
 
 ```shell
-cd ip2region项目根目录
+cd ${ip2region_root}/java/
 java -jar dbMaker-1.2.2.jar -src ./data/ip.merge.txt -region ./data/global_region.csv
 
 # 会看到一大片的输出
