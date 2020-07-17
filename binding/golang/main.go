@@ -1,22 +1,22 @@
 package main
 
 import (
-	"os"
-	"github.com/lionsoul2014/ip2region/binding/golang/ip2region"
 	"bufio"
-	"fmt"
-	"strings"
 	"errors"
+	"fmt"
+	"os"
+	"strings"
 	"time"
 
+	"github.com/admpub/ip2region/binding/golang/ip2region"
 )
 
 func main() {
 
 	db := os.Args[1]
 
-	_,err:= os.Stat(db)
-	if os.IsNotExist(err){
+	_, err := os.Stat(db)
+	if os.IsNotExist(err) {
 		panic("not found db " + db)
 	}
 
@@ -34,15 +34,15 @@ func main() {
 	for {
 		fmt.Print("ip2reginon >> ")
 		data, _, _ := reader.ReadLine()
-		begin:= time.Now()
+		begin := time.Now()
 		commands := strings.Fields(string(data))
 		ip := ip2region.IpInfo{}
 		len := len(commands)
-		if len == 0{
+		if len == 0 {
 			continue
 		}
 
-		if commands[0] == "quit"{
+		if commands[0] == "quit" {
 			break
 		}
 
@@ -62,9 +62,9 @@ func main() {
 
 		if err != nil {
 
-			fmt.Println( fmt.Sprintf("\x1b[0;31m%s\x1b[0m",err.Error()))
-		}else{
-			fmt.Println( fmt.Sprintf("\x1b[0;32m%s  %s\x1b[0m",ip.String(),time.Since(begin).String()))
+			fmt.Println(fmt.Sprintf("\x1b[0;31m%s\x1b[0m", err.Error()))
+		} else {
+			fmt.Println(fmt.Sprintf("\x1b[0;32m%s  %s\x1b[0m", ip.String(), time.Since(begin).String()))
 		}
 	}
 }
