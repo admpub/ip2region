@@ -2,6 +2,7 @@ package ip2region
 
 import (
 	"io/ioutil"
+	"os"
 	"sync"
 )
 
@@ -67,4 +68,25 @@ func (this *Ip2Region) InitBtreeSearch() (err error) {
 
 func (this *Ip2Region) ResetBtreeSearch() {
 	this.headerLenOnce = sync.Once{}
+}
+
+func (this *Ip2Region) Reload(newPath ...string) error {
+	path := this.dbFile
+	if len(newPath) > 0 && len(newPath[0]) > 0 {
+		path = newPath[0]
+	}
+	if path != this.dbFile || this.dbFileHandler == nil {
+		file, err := os.Open(path)
+		if err != nil {
+			return err
+		}
+		if this.dbFileHandler != nil {
+			this.dbFileHandler.Close()
+		}
+		this.dbFile = path
+		this.dbFileHandler = file
+	}
+	this.ResetMemoryAndBinarySearch()
+	this.ResetBtreeSearch()
+	return err
 }

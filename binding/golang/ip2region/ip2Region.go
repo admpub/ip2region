@@ -88,6 +88,7 @@ func New(path string) (*Ip2Region, error) {
 
 func (this *Ip2Region) Close() {
 	this.dbFileHandler.Close()
+	this.dbFileHandler = nil
 }
 
 func (this *Ip2Region) MemorySearch(ipStr string) (ipInfo IpInfo, err error) {
