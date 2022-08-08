@@ -1,11 +1,5 @@
 2022-07-01
 ---
-### ipdatacloud 
-```
-https://www.ipdatacloud.com/
-```
-
-
 
 
 2021 pre
