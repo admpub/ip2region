@@ -76,7 +76,7 @@ type Searcher struct {
 	handle *os.File
 
 	// header info
-	header  *Header
+	// header  *Header
 	ioCount int
 
 	// use it only when this feature enabled.
@@ -124,13 +124,19 @@ func NewWithBuffer(cBuff []byte) (*Searcher, error) {
 	return baseNew("", nil, cBuff)
 }
 
-func (s *Searcher) Close() {
+func (s *Searcher) SetContentBuff(b []byte) {
+	s.contentBuff = b
+}
+
+func (s *Searcher) Close() (err error) {
+	s.ioCount = 0
+	s.vectorIndex = nil
+	s.contentBuff = nil
 	if s.handle != nil {
-		err := s.handle.Close()
-		if err != nil {
-			return
-		}
+		err = s.handle.Close()
+		s.handle = nil
 	}
+	return
 }
 
 // GetIOCount return the global io count for the last search

@@ -1,3 +1,3 @@
-module github.com/lionsoul2014/ip2region/maker/golang
+module github.com/admpub/ip2region/maker/golang
 
 go 1.17

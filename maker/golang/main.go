@@ -7,11 +7,12 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"github.com/lionsoul2014/ip2region/maker/golang/xdb"
 	"log"
 	"os"
 	"strings"
 	"time"
+
+	"github.com/admpub/ip2region/maker/golang/xdb"
 )
 
 func printHelp() {
