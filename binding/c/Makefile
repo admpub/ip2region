@@ -1,26 +1,14 @@
-A = @
-CFLAGS=	-g
-CC=		gcc
-LIBS= -I./
-LDFLAGS=
-RM = rm -f
-MV = mv
+all: xdb_searcher util_test
 
-testSearcher: ip2region.o
-	$(A) $(CC) $(CFLAGS) $(LDFLAGS) $(LIBS) -o testSearcher testSearcher.c ip2region.c
-	$(A) $(RM) ip2region.o testSearcher.o
+xdb_searcher: xdb_searcher.h xdb_searcher.c main.c
+	gcc -g -O2 -I./ xdb_searcher.c main.c -o xdb_searcher
 
-db:
-	$(A) cd ../../;\
-	export LANG=en_US.UTF-8;\
-	java -jar dbMaker-1.2.2.jar -src ./data/ip.merge.txt -region ./data/global_region.csv -dst .;\
-	$(MV) ./ip2region.db ./binding/c/;\
-	cd ./binding/c
-
-all: db testSearcher
-
+util_test: xdb_searcher.h xdb_searcher.c util_test.c
+	gcc -g -O2 -I./ xdb_searcher.c util_test.c -o util_test
 
 clean:
-	$(A) $(RM) testSearcher
-	
-.PHONY: all clean testSearcher db
+	find ./ -name \*.o  | xargs rm -f
+	find ./ -name util_test | xargs rm -f
+	find ./ -name xdb_searcher | xargs rm -f
+
+.PHONY: all clean xdb_searcher util_test

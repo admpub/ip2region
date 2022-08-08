@@ -1,25 +1,13 @@
-# ip2region luc c module Make file
-# @author   chenxin<chenxin619315@gmail.com>
-# @date     2018/10/05
+LuaVersion = 5.3
+LIB_DIR = /usr/local/share/lua/$(LuaVersion)
 
-# @Note
-# Please modify the LIBS and the LIB_DIR to fit you system
-# 
-
-VER = 5.2
-CC = gcc
-LIBS = -I ../c/ -I /usr/include/lua$(VER)/
-FFLAGS = -O2 -Wall -fPIC
-SO_FILE = Ip2region.so
-LIB_DIR = /usr/local/share/lua/$(VER)
-
-all: ../c/ip2region.c ../c/ip2region.h lua_ip2region.c
-	$(CC) $(FFLAGS) $(LIBS) ../c/ip2region.c lua_ip2region.c -fPIC -shared -o $(SO_FILE)
+all: ../c/xdb_searcher.h ../c/xdb_searcher.c xdb_searcher.c
+	gcc -g -O2 -I../c/ -I/usr/include/lua$(LuaVersion) ../c/xdb_searcher.c xdb_searcher.c -fPIC -shared -o xdb_searcher.so
 
 install:
 	sudo mkdir -p $(LIB_DIR); \
-	sudo cp $(SO_FILE) $(LIB_DIR);\
-	echo "install Ip2region to $(LIB_DIR) successfully.";\
+	sudo cp xdb_searcher.so $(LIB_DIR);\
+	echo "install xdb searcher to $(LIB_DIR) successfully.";\
 
 clean:
 	find . -name \*.so | xargs rm -f
