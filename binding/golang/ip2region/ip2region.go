@@ -3,7 +3,7 @@ package ip2region
 import (
 	"sync"
 
-	"github.com/admpub/ip2region/binding/golang/xdb"
+	"github.com/admpub/ip2region/binding/golang/v2/xdb"
 )
 
 type Ip2Region struct {

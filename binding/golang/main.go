@@ -16,7 +16,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/admpub/ip2region/binding/golang/xdb"
+	"github.com/admpub/ip2region/binding/golang/v2/xdb"
 	"github.com/mitchellh/go-homedir"
 )
 

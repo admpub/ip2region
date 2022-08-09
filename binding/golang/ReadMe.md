@@ -4,7 +4,7 @@
 
 ### package 获取
 ```bash
-go get github.com/lionsoul2014/ip2region/binding/golang
+go get github.com/admpub/ip2region/binding/golang/v2
 ```
 
 ### 完全基于文件的查询
@@ -12,8 +12,9 @@ go get github.com/lionsoul2014/ip2region/binding/golang
 ```golang
 import (
 	"fmt"
-	"github.com/lionsoul2014/ip2region/binding/golang/xdb"
     "time"
+
+	"github.com/admpub/ip2region/binding/golang/v2/xdb"
 )
 
 func main() {
@@ -46,7 +47,7 @@ func main() {
 可以预先加载 `vecotorIndex` 缓存，然后做成全局变量，每次创建 searcher 的时候使用全局的 `vectorIndex`，可以减少一次固定的 IO 操作从而加速查询，减少系统 io 压力。
 ```golang
 // 1、从 dbPath 加载 VectorIndex 缓存，把下述 vIndex 变量全局到内存里面。
-vIndex, err := LoadVectorIndexFromFile(dbPath)
+vIndex, err := xdb.LoadVectorIndexFromFile(dbPath)
 if err != nil {
     fmt.Printf("failed to load vector index from `%s`: %s\n", dbPath, err)
     return
@@ -67,7 +68,7 @@ if err != nil {
 可以预先加载整个 ip2region.xdb 到内存，完全基于内存查询，类似于之前的 memory search 查询。
 ```golang
 // 1、从 dbPath 加载整个 xdb 到内存
-cBuff, err := LoadContentFromFile(dbPath)
+cBuff, err := xdb.LoadContentFromFile(dbPath)
 if err != nil {
     fmt.Printf("failed to load content from `%s`: %s\n", dbPath, err)
     return
