@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/admpub/ip2region/v3/binding/golang/xdb"
+	"github.com/admpub/ip2region/binding/golang/v3/xdb"
 )
 
 func BenchmarkMemorySearch(B *testing.B) {

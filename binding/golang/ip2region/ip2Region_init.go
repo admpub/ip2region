@@ -3,7 +3,7 @@ package ip2region
 import (
 	"sync"
 
-	"github.com/admpub/ip2region/v3/binding/golang/xdb"
+	"github.com/admpub/ip2region/binding/golang/v3/xdb"
 )
 
 func (a *Ip2Region) Reload(newPath ...string) error {
