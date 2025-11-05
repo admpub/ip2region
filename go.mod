@@ -1,4 +1,4 @@
-module github.com/admpub/ip2region/v2
+module github.com/admpub/ip2region
 
 go 1.18
 
