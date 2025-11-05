@@ -1,4 +1,4 @@
-module github.com/admpub/ip2region/binding/golang
+module github.com/admpub/ip2region/v3/binding/golang
 
 go 1.17
 

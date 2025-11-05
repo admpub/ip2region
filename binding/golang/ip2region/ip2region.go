@@ -5,7 +5,7 @@ import (
 	"os"
 	"sync"
 
-	"github.com/admpub/ip2region/binding/golang/xdb"
+	"github.com/admpub/ip2region/v3/binding/golang/xdb"
 )
 
 type Ip2Region struct {
