@@ -18,8 +18,8 @@ function printHelp()
     print(" --cache-policy string   cache policy: file/vectorIndex/content")
 end
 
-if #arg < 2 then
-    printHelp(arg)
+if #arg < 1 then
+    printHelp()
     return
 end
 
@@ -59,10 +59,44 @@ if string.len(dbFile) < 2 then
     return
 end
 
+-- open the dbFile
+local handle, closer, err = xdb.open_file(dbFile, "rb")
+if err ~= nil then
+    print(string.format("failed to open %s: %s", dbFile, err))
+    return
+end
+
+-- verify the xdb
+err = xdb.verify(handle)
+if err ~= nil then
+    closer("xdb_verify")
+    print(string.format("verify(%s): %s", dbFile, err))
+    return
+end
+
+-- load the header and define the ip version
+local header, err = xdb.load_header(handle)
+if err ~= nil then
+    closer()
+    print(string.format("failed to load the header: %s", err))
+    return
+end
+
+local version, err = xdb.version_from_header(header)
+if err ~= nil then
+    closer()
+    print(string.format("failed to detect version from header: %s", err))
+    return
+end
+
+-- file close
+closer("search_test")
+
+
 -- create the searcher based on the cache-policy
 local searcher, v_index, content
 if cachePolicy == "file" then
-    searcher, err = xdb.new_with_file_only(dbFile)
+    searcher, err = xdb.new_with_file_only(version, dbFile)
     if err ~= nil then
         print(string.format("failed to create searcher: %s", err))
         return
@@ -74,7 +108,7 @@ elseif cachePolicy == "vectorIndex" then
         return
     end
 
-    searcher, err = xdb.new_with_vector_index(dbFile, v_index)
+    searcher, err = xdb.new_with_vector_index(version, dbFile, v_index)
     if err ~= nil then
         print(string.format("failed to create vector index searcher: %s", err))
         return
@@ -86,7 +120,7 @@ elseif cachePolicy == "content" then
         return
     end
 
-    searcher, err = xdb.new_with_buffer(content)
+    searcher, err = xdb.new_with_buffer(version, content)
     if err ~= nil then
         print(string.format("failed to create content buffer searcher: %s", err))
         return
@@ -98,31 +132,36 @@ end
 
 -- do the search
 print(string.format([[
-ip2region xdb searcher test program, cachePolicy: %s
-type 'quit' to exit]], cachePolicy))
-local region, err = "", nil
-local ip_int, s_time, c_time =  0, 0, 0
-while ( true ) do
+ip2region xdb searcher test program
+source xdb: %s (%s, %s)
+type 'quit' to exit]], dbFile, version.name, cachePolicy))
+local region, err = nil, nil
+local ip_bytes, s_time, c_time = nil, 0, 0
+while true do
     io.write("ip2region>> ");
     io.input(io.stdin);
     local line = io.read();
-    if (line == nil) then
+    if line == nil then
         break
     end
 
-    if ( line == "quit" ) then
+    if #line < 1 then
+        goto continue
+    end
+
+    if line == "quit" then
         break
     end
 
-    ip_int, err = xdb.check_ip(line)
+    s_time = xdb.now()
+    ip_bytes, err = xdb.parse_ip(line)
     if err ~= nil then
-        print(string.format("invalid ip address `%s`", line))
+        print(string.format("failed to parse ip `%s`: %s", line, err))
         goto continue
     end
 
     -- do the search
-    s_time = xdb.now()
-    region, err = searcher:search(line)
+    region, err = searcher:search(ip_bytes)
     if err ~= nil then
         print(string.format("{err: %s, io_count: %d}", err, searcher:get_io_count()))
     else

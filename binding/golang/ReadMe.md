@@ -4,7 +4,43 @@
 
 ### package 获取
 ```bash
-go get github.com/admpub/ip2region/binding/golang/v2
+go get github.com/lionsoul2014/ip2region/binding/golang
+```
+
+### 关于查询 API
+定位信息查询 API 原型为：
+```golang
+SearchByStr(string) (string, error)
+Search([]byte) (string, error)
+```
+查询出错则 error 会包含具体的错误信息，查询成功会返回字符串的 `region` 信息，如果指定的 IP 查询不到则会返回空字符串 `""`。
+
+### 关于 IPv4 / IPv6
+该 xdb 查询客户端实现同时支持对 IPv4 和 IPv6 的查询，使用方式如下：
+```golang
+// 如果是 IPv4: 设置 xdb 路径为 v4 的 xdb 文件，IP版本指定为 xdb.IPv4
+dbPath := "../../data/ip2region_v4.xdb"  // 或者你的 ipv4 xdb 的路径
+version := xdb.IPv4
+
+// 如果是 IPv6: 设置 xdb 路径为 v6 的 xdb 文件，IP版本指定为 xdb.IPv6
+dbPath = "../../data/ip2region_v6.xdb"  // 或者你的 ipv6 xdb 路径
+version = xdb.IPv6
+
+// dbPath 指定的 xdb 的 IP 版本必须和 version 指定的一致，不然查询执行的时候会报错
+// 备注：以下演示直接使用 dbPath 和 version 变量
+```
+
+### 文件验证
+建议您主动去验证 xdb 文件的适用性，因为后期的一些新功能可能会导致目前的 Searcher 版本无法适用你使用的 xdb 文件，验证可以避免运行过程中的一些不可预测的错误。
+你不需要每次都去验证，例如在服务启动的时候，或者手动调用命令验证确认版本匹配即可，不要在每次创建的 Searcher 的时候运行验证，这样会影响查询的响应速度，尤其是高并发的使用场景。
+```golang
+err := xdb.VerifyFromFile(dbPath)
+if err != nil {
+	// err 包含的验证的错误
+	return fmt.Errorf("xdb file verify: %w", err)
+}
+
+// 当前使用的 Searcher 可以安全的用于对 dbPath 指向的 xdb 的查询操作
 ```
 
 ### 完全基于文件的查询
@@ -12,14 +48,13 @@ go get github.com/admpub/ip2region/binding/golang/v2
 ```golang
 import (
 	"fmt"
+	"github.com/lionsoul2014/ip2region/binding/golang/xdb"
     "time"
-
-	"github.com/admpub/ip2region/binding/golang/v2/xdb"
 )
 
 func main() {
-    var dbPath = "ip2region.xdb file path"
-    searcher, err := xdb.NewWithFileOnly(dbPath)
+	// 通过 version 和 dbPath 创建完全基于文件的查询对象
+    searcher, err := xdb.NewWithFileOnly(version, dbPath)
     if err != nil {
         fmt.Printf("failed to create searcher: %s\n", err.Error())
         return
@@ -27,8 +62,9 @@ func main() {
 
     defer searcher.Close()
 
-    // do the search
-    var ip = "1.2.3.4"
+    // 定位信息查询：IPv4 或者 IPv6 的地址都支持
+    var ip = "1.2.3.4"  // IPv4
+	// ip = "2001:4:112:ffff:ffff:ffff:ffff:ffff" // IPv6
     var tStart = time.Now()
     region, err := searcher.SearchByStr(ip)
     if err != nil {
@@ -36,15 +72,16 @@ func main() {
         return
     }
 
+	// IPv4 或者 IPv6 的定位信息 
     fmt.Printf("{region: %s, took: %s}\n", region, time.Since(tStart))
 
     // 备注：并发使用，每个 goroutine 需要创建一个独立的 searcher 对象。
 }
 ```
 
-### 缓存 `VetorIndex` 索引
+### 缓存 `VectorIndex` 索引
 
-可以预先加载 `vecotorIndex` 缓存，然后做成全局变量，每次创建 searcher 的时候使用全局的 `vectorIndex`，可以减少一次固定的 IO 操作从而加速查询，减少系统 io 压力。
+可以预先加载 `vectorIndex` 缓存，然后做成全局变量，每次创建 searcher 的时候使用全局的 `vectorIndex`，可以减少一次固定的 IO 操作从而加速查询，减少系统 io 压力。
 ```golang
 // 1、从 dbPath 加载 VectorIndex 缓存，把下述 vIndex 变量全局到内存里面。
 vIndex, err := xdb.LoadVectorIndexFromFile(dbPath)
@@ -54,7 +91,7 @@ if err != nil {
 }
 
 // 2、用全局的 vIndex 创建带 VectorIndex 缓存的查询对象。
-searcher, err := xdb.NewWithVectorIndex(dbPath, vIndex)
+searcher, err := xdb.NewWithVectorIndex(version, dbPath, vIndex)
 if err != nil {
     fmt.Printf("failed to create searcher with vector index: %s\n", err)
     return
@@ -75,7 +112,7 @@ if err != nil {
 }
 
 // 2、用全局的 cBuff 创建完全基于内存的查询对象。
-searcher, err := xdb.NewWithBuffer(cBuff)
+searcher, err := xdb.NewWithBuffer(version, cBuff)
 if err != nil {
     fmt.Printf("failed to create searcher with content: %s\n", err)
     return
@@ -97,31 +134,46 @@ make
 
 # 查询测试
 
-通过 `xdb_searcher search` 命令来测试 ip2region.xdb 的查询：
-```
-➜  golang git:(v2.0_xdb) ./xdb_searcher search
+通过 `xdb_searcher search` 命令来测试 xdb 的查询：
+```bash
+➜  golang git:(fr_xdb_ipv6) ✗ ./xdb_searcher search                                 
 ./xdb_searcher search [command options]
 options:
  --db string              ip2region binary xdb file path
  --cache-policy string    cache policy: file/vectorIndex/content
 ```
 
-例如：使用默认的 data/ip2region.xdb 进行查询测试
+例如：使用默认的 data/ip2region_v4.xdb 进行 IPv4 的查询测试
 ```bash
-➜  golang git:(v2.0_xdb) ✗ ./xdb_searcher search --db=../../data/ip2region.xdb
-ip2region xdb searcher test program, type `quit` to exit
-ip2region>> 1.2.3.4
-{region:美国|0|华盛顿|0|谷歌, took:101.57µs}
+➜  golang git:(master) ./xdb_searcher search --db=../../data/ip2region_v4.xdb
+ip2region xdb searcher test program
+source xdb: ../../data/ip2region_v4.xdb (IPv4, vectorIndex)
+type 'quit' to exit
+ip2region>> 219.133.111.87
+{region: 中国|广东省|深圳市|电信, ioCount: 2, took: 19.005µs}
+ip2region>> 
 ```
 
-输入 ip 地址进行查询即可，输入 quit 退出测试程序。可以设置 `cache-policy` 为 file/vectorIndex/content 来测试不同的查询缓存机制。
+例如：使用默认的 data/ip2region_v6.xdb 进行 IPv6 的查询：
+```bash
+➜  golang git:(master) ✗ ./xdb_searcher search --db=../../data/ip2region_v6.xdb
+ip2region xdb searcher test program
+source xdb: ../../data/ip2region_v6.xdb (IPv6, vectorIndex)
+type 'quit' to exit
+ip2region>> ::
+{region: , ioCount: 1, took: 42.157µs}
+ip2region>> 240e:87c:892:ffff:ffff:ffff:ffff:ffff
+{region: 中国|北京市|北京市|专线用户, ioCount: 10, took: 88.769µs}
+```
+
+输入对应版本的 ip 地址进行查询即可，输入 quit 退出测试程序。可以设置 `cache-policy` 为 file/vectorIndex/content 来测试不同的查询缓存机制。
 
 
 # bench 测试
 
 通过 `xdb_searcher bench` 命令来进行自动 bench 测试，一方面确保程序和 `xdb` 文件都没有错误，另一方面通过大量的查询得到平均查询性能：
 ```bash
-➜  golang git:(v2.0_xdb) ./xdb_searcher bench
+➜  golang git:(fr_xdb_ipv6) ./xdb_searcher bench
 ./xdb_searcher bench [command options]
 options:
  --db string              ip2region binary xdb file path
@@ -129,11 +181,16 @@ options:
  --cache-policy string    cache policy: file/vectorIndex/content
 ```
 
-例如：通过 data/ip2region.xdb 和 data/ip.merge.txt 进行 bench 测试：
+例如：通过 data/ip2region_v4.xdb 和 data/ipv4_source.txt 进行 ipv4 的 bench 测试：
 ```bash
-➜  golang git:(v2.0_xdb) ✗ ./xdb_searcher bench --db=../../data/ip2region.xdb --src=../../data/ip.merge.txt
-Bench finished, {total: 3417955, took: 28.211578339s, cost: 8253 ns/op}
+./xdb_searcher bench --db=../../data/ip2region_v4.xdb --src=../../data/ipv4_source.txt 
 ```
+
+例如：通过 data/ip2region_v6.xdb 和 data/ipv6_source.txt 进行 ipv6 的 bench 测试：
+```bash
+./xdb_searcher bench --db=../../data/ip2region_v6.xdb --src=../../data/ipv6_source.txt 
+```
+
 
 可以设置 `cache-policy` 参数来分别测试 file/vectorIndex/content 不同缓存实现机制的效率。
 

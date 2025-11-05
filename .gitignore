@@ -6,7 +6,6 @@
 *.log
 *.la
 *.so
-*.xdb
 *.iml
 META-INF/
 .DS_Store
@@ -27,6 +26,7 @@ META-INF/
 # vim swp file #
 *.swp
 .idea
+.vscode
 
 # binding
 /v1.0//binding/java/classes/
@@ -38,9 +38,12 @@ META-INF/
 /binding/java/target/
 /binding/java/*.jar
 
+# python
+/**/__pycache__
+
 # clang
 /binding/c/xdb_searcher
-/binding/c/util_test
+/binding/c/test_util
 /binding/c/cmake-build-debug
 
 # lua/luc_c
@@ -76,8 +79,23 @@ target
 /binding/nodejs/.nyc_output
 /binging/nodejs/package-lock.json
 
+# Javascript
+/binding/javascript/tests/unitTests/__snapshots__
+/binding/javascript/coverage
+/binding/javascript/node_modules
+/binding/javascript/.nyc_output
+/binding/javascript/package-lock.json
+
 # maker
 ## golang
 /maker/golang/dbmaker
 /maker/golang/xdb_maker
 /maker/golang/golang
+
+#erlang
+/binding/erlang/_build
+/binding/erlang/doc
+
+#vscode
+.vscode
+build

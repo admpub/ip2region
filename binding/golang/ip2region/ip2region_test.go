@@ -6,10 +6,12 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/admpub/ip2region/binding/golang/xdb"
 )
 
 func BenchmarkMemorySearch(B *testing.B) {
-	region, err := New("../../../data/ip2region.xdb")
+	region, err := New("../../../data/ip2region.xdb", true)
 	if err != nil {
 		B.Error(err)
 	}
@@ -20,9 +22,13 @@ func BenchmarkMemorySearch(B *testing.B) {
 }
 
 func TestRace(t *testing.T) {
-	region, err := New("../../../data/ip2region.xdb")
+	region, err := New("../../../data/ip2region_v6.xdb", false)
 	if err != nil {
 		panic(err)
+	}
+	testIP := `219.133.111.87`
+	if region.dbVer.Id == xdb.IPv6VersionNo {
+		testIP = `240e:87c:892:ffff:ffff:ffff:ffff:ffff`
 	}
 	wg := sync.WaitGroup{}
 	n := 10
@@ -35,11 +41,12 @@ func TestRace(t *testing.T) {
 					fmt.Println(`[`+strconv.Itoa(i)+`]co:`, e)
 				}
 			}()
-			info, err := region.MemorySearch(`127.0.0.1`)
+			result, err := region.MemorySearchString(testIP)
 			if err != nil {
 				t.Error(err)
 			}
-			fmt.Printf("MemorySearch: %#v\n", info)
+			info := ParseResult(result)
+			fmt.Printf("MemorySearch: %#v [%s]\n", info, result)
 
 			time.Sleep(100 * time.Millisecond)
 		}(i)

@@ -4,12 +4,12 @@
 
     <groupId>org.lionsoul</groupId>
     <artifactId>ip2region</artifactId>
-    <version>2.6.5</version>
+    <version>3.1.1</version>
     <packaging>jar</packaging>
 
     <name>ip2region</name>
     <url>https://github.com/lionsoul2014/ip2region</url>
-    <description>Open source offline internet address db manager framework and locator</description>
+    <description>An open source offline IP address data manager framework and locator with both IPv4 and IPv6 suppported</description>
 
     <licenses>
         <license>
@@ -33,6 +33,17 @@
         </developer>
     </developers>
 
+    <distributionManagement>
+		<snapshotRepository>
+			<id>lionsoul</id>
+			<url>https://oss.sonatype.org/content/repositories/snapshots/</url>
+		</snapshotRepository>
+		<repository>
+			<id>lionsoul</id>
+			<url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+		</repository>
+	</distributionManagement>
+
     <issueManagement>
         <url>https://github.com/lionsoul2014/ip2region/issues</url>
         <system>Github issues</system>
@@ -41,6 +52,8 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+        <maven.compiler.source>1.8</maven.compiler.source>
+        <maven.compiler.target>1.8</maven.compiler.target>
     </properties>
 
     <dependencies>
@@ -103,7 +116,7 @@
                         <configuration>
                             <transformers>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>org.lionsoul.ip2region.SearchTest</mainClass>
+                                    <mainClass>org.lionsoul.ip2region.SearchApp</mainClass>
                                 </transformer>
                             </transformers>
                         </configuration>
@@ -172,18 +185,19 @@
                             </execution>
                         </executions>
                     </plugin>
+                    <!--use the Central Portal: https://central.sonatype.org/publish/publish-portal-maven/ instead-->
+                    <plugin>
+                        <groupId>org.sonatype.central</groupId>
+                        <artifactId>central-publishing-maven-plugin</artifactId>
+                        <version>0.7.0</version>
+                        <extensions>true</extensions>
+                        <configuration>
+                            <publishingServerId>lionsoul</publishingServerId>
+                            <autoPublish>true</autoPublish>
+                        </configuration>
+                    </plugin>
                 </plugins>
             </build>
-            <distributionManagement>
-                <snapshotRepository>
-                    <id>oss</id>
-                    <url>https://oss.sonatype.org/content/repositories/snapshots/</url>
-                </snapshotRepository>
-                <repository>
-                    <id>oss</id>
-                    <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
-                </repository>
-            </distributionManagement>
         </profile>
     </profiles>
 

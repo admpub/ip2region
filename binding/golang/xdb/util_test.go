@@ -9,43 +9,40 @@
 package xdb
 
 import (
-	"encoding/binary"
 	"fmt"
-	"net"
 	"testing"
 	"time"
 )
 
-func TestCheckIP(t *testing.T) {
-	var str = "29.34.191.255"
-	ip, err := CheckIP(str)
-	if err != nil {
-		t.Errorf("check ip `%s`: %s\n", str, err)
-	}
+func TestParseIP(t *testing.T) {
+	var ips = []string{"29.34.191.255", "2c0f:fff0::", "2fff:ffff:ffff:ffff:ffff:ffff:ffff:ffff"}
+	for _, ip := range ips {
+		bytes, err := ParseIP(ip)
+		if err != nil {
+			t.Errorf("check ip `%s`: %s\n", IP2String(bytes), err)
+		}
 
-	netIP := net.ParseIP(str).To4()
-	if netIP == nil {
-		t.Fatalf("parse ip `%s` failed", str)
+		nip := IP2String(bytes)
+		fmt.Printf("checkip: (%s / %s), isEqual: %v\n", ip, nip, ip == nip)
 	}
-
-	u32 := binary.BigEndian.Uint32(netIP)
-	fmt.Printf("checkip: %d, parseip: %d, isEqual: %v\n", ip, u32, ip == u32)
 }
 
-func TestLong2IP(t *testing.T) {
-	var str = "29.34.191.255"
-	netIP := net.ParseIP(str).To4()
-	if netIP == nil {
-		t.Fatalf("parse ip `%s` failed", str)
+func TestIPCompare(t *testing.T) {
+	var ipPairs = [][]string{
+		{"1.2.3.4", "1.2.3.5"},
+		{"58.250.36.41", "58.250.30.41"},
+		{"2c10::", "2e00::"},
+		{"fdff:ffff:ffff:ffff:ffff:ffff:ffff:ffff", "febf:ffff:ffff:ffff:ffff:ffff:ffff:ffff"},
+		{"fe7f:ffff:ffff:ffff:ffff:ffff:ffff:ffff", "fe00::"},
 	}
 
-	u32 := binary.BigEndian.Uint32(netIP)
-	ipStr := Long2IP(u32)
-	fmt.Printf("originIP: %s, Long2IP: %s, isEqual: %v\n", str, ipStr, ipStr == str)
+	for _, pairs := range ipPairs {
+		fmt.Printf("IPCompare(%s, %s): %d\n", pairs[0], pairs[1], IPCompare([]byte(pairs[0]), []byte(pairs[1])))
+	}
 }
 
 func TestLoadVectorIndex(t *testing.T) {
-	vIndex, err := LoadVectorIndexFromFile("../../../data/ip2region.xdb")
+	vIndex, err := LoadVectorIndexFromFile("../../../data/ip2region_v4.xdb")
 	if err != nil {
 		fmt.Printf("failed to load vector index: %s\n", err)
 		return
@@ -55,7 +52,7 @@ func TestLoadVectorIndex(t *testing.T) {
 }
 
 func TestLoadContent(t *testing.T) {
-	buff, err := LoadContentFromFile("../../../data/ip2region.xdb")
+	buff, err := LoadContentFromFile("../../../data/ip2region_v4.xdb")
 	if err != nil {
 		fmt.Printf("failed to load xdb content: %s\n", err)
 		return
@@ -65,15 +62,17 @@ func TestLoadContent(t *testing.T) {
 }
 
 func TestLoadHeader(t *testing.T) {
-	header, err := LoadHeaderFromFile("../../../data/ip2region.xdb")
+	header, err := LoadHeaderFromFile("../../../data/ip2region_v4.xdb")
 	if err != nil {
 		fmt.Printf("failed to load xdb header info: %s\n", err)
 		return
 	}
 
-	fmt.Printf("Version        : %d\n", header.Version)
-	fmt.Printf("IndexPolicy    : %s\n", header.IndexPolicy.String())
-	fmt.Printf("CreatedAt      : %d(%s)\n", header.CreatedAt, time.Unix(int64(header.CreatedAt), 0).Format(time.RFC3339))
-	fmt.Printf("StartIndexPtr  : %d\n", header.StartIndexPtr)
-	fmt.Printf("EndIndexPtr    : %d\n", header.EndIndexPtr)
+	fmt.Printf("Version         : %d\n", header.Version)
+	fmt.Printf("IndexPolicy     : %s\n", header.IndexPolicy.String())
+	fmt.Printf("CreatedAt       : %d(%s)\n", header.CreatedAt, time.Unix(int64(header.CreatedAt), 0).Format(time.RFC3339))
+	fmt.Printf("StartIndexPtr   : %d\n", header.StartIndexPtr)
+	fmt.Printf("EndIndexPtr     : %d\n", header.EndIndexPtr)
+	fmt.Printf("IPVersion       : %d\n", header.IPVersion)
+	fmt.Printf("RuntimePtrBytes : %d\n", header.RuntimePtrBytes)
 }

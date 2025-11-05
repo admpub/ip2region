@@ -7,56 +7,112 @@
 // @Date   2022/06/28
 
 #include "stdio.h"
-#include "xdb_searcher.h"
+#include "xdb_api.h"
 
 struct searcher_test_entry {
     xdb_searcher_t searcher;
     xdb_vector_index_t *v_index;
     xdb_content_t *c_buffer;
+
+    // xdb region buffer
+    // char region_buffer[256];
+    xdb_region_buffer_t region;
 };
 typedef struct searcher_test_entry searcher_test_t;
 
 int init_searcher_test(searcher_test_t *test, char *db_path, char *cache_policy) {
-    int err;
+    int err, errcode = 0;
+    FILE *handle = fopen(db_path, "rb");
+    if (handle == NULL) {
+        return -1;
+    }
+
+    // auto detect the version from the xdb header
+    xdb_header_t *header = xdb_load_header(handle);
+    if (header == NULL) {
+        printf("failed to load header from `%s`\n", db_path);
+        errcode = 1;
+        goto defer;
+    }
+
+    // verify the current xdb
+    err = xdb_verify_from_header(handle, header);
+    if (err != 0) {
+        printf("failed to verify xdb file `%s` with errno=%d\n", db_path, err);
+        errcode = 2;
+        goto defer;
+    }
+
+    xdb_version_t *version = xdb_version_from_header(header);
+    if (version == NULL) {
+        printf("failed to load version from header\n");
+        errcode = 3;
+        goto defer;
+    }
+
     test->v_index = NULL;
     test->c_buffer = NULL;
 
     if (strcmp(cache_policy, "file") == 0) {
-        err = xdb_new_with_file_only(&test->searcher, db_path);
+        err = xdb_new_with_file_only(version, &test->searcher, db_path);
         if (err != 0) {
             printf("failed to create searcher with errcode=%d\n", err);
-            return 1;
+            errcode = 4;
+            goto defer;
         }
     } else if (strcmp(cache_policy, "vectorIndex") == 0) {
         test->v_index = xdb_load_vector_index_from_file(db_path);
         if (test->v_index == NULL) {
             printf("failed to load vector index from `%s`\n", db_path);
-            return 2;
+            errcode = 4;
+            goto defer;
         }
 
-        err = xdb_new_with_vector_index(&test->searcher, db_path, test->v_index);
+        err = xdb_new_with_vector_index(version, &test->searcher, db_path, test->v_index);
         if (err != 0) {
             printf("failed to create vector index cached searcher with errcode=%d\n", err);
-            return 3;
+            errcode = 5;
+            goto defer;
         }
     } else if (strcmp(cache_policy, "content") == 0) {
         test->c_buffer = xdb_load_content_from_file(db_path);
         if (test->c_buffer == NULL) {
             printf("failed to load xdb content from `%s`\n", db_path);
-            return 4;
+            errcode = 4;
+            goto defer;
         }
 
-        err = xdb_new_with_buffer(&test->searcher, test->c_buffer);
+        err = xdb_new_with_buffer(version, &test->searcher, test->c_buffer);
         if (err != 0) {
             printf("failed to create content cached searcher with errcode=%d\n", err);
-            return 5;
+            errcode = 5;
+            goto defer;
         }
     } else {
         printf("invalid cache policy `%s`, options: file/vectorIndex/content\n", cache_policy);
-        return 6;
+        errcode = 6;
+        goto defer;
     }
 
-    return 0;
+    // init the region buffer
+    // err = xdb_region_buffer_init(&test->region, test->region_buffer, sizeof(test->region_buffer));
+    err = xdb_region_buffer_init(&test->region, NULL, 0);
+    if (err != 0) {
+        printf("failed to init the region buffer with err=%d\n", err);
+        errcode = 7;
+        goto defer;
+    }
+
+defer:
+    if (header != NULL) {
+        xdb_free_header(header);
+    }
+
+    if (handle != NULL) {
+        fclose(handle);
+    }
+
+    return errcode;
 }
 
 void destroy_searcher_test(searcher_test_t *test) {
@@ -64,13 +120,13 @@ void destroy_searcher_test(searcher_test_t *test) {
 
     // check and free the vector index
     if (test->v_index != NULL) {
-        xdb_close_vector_index(test->v_index);
+        xdb_free_vector_index(test->v_index);
         test->v_index = NULL;
     }
 
     // check and free the content buffer
     if (test->c_buffer != NULL) {
-        xdb_close_content(test->c_buffer);
+        xdb_free_content(test->c_buffer);
         test->c_buffer = NULL;
     }
 }
@@ -107,8 +163,12 @@ void test_search(int argc, char *argv[]) {
 
     // for search
     long s_time, c_time;
-    unsigned int ip;
-    char line[512] = {'\0'}, region[512] = {'\0'};
+    char line[512] = {'\0'};
+
+    // ip parse
+    xdb_version_t *version;
+    bytes_ip_t ip_bytes[16] = {'\0'};
+
     searcher_test_t test;
 
     for (i = 2; i < argc; i++) {
@@ -152,6 +212,13 @@ void test_search(int argc, char *argv[]) {
         return;
     }
 
+    // init the win sock
+    err = xdb_init_winsock();
+    if (err != 0) {
+        printf("failed to init the winsock with errno=%d\n", err);
+        return;
+    }
+
     // printf("db_file=%s, cache_policy=%s\n", db_file, cache_policy);
     err = init_searcher_test(&test, db_file, cache_policy);
     if (err != 0) {
@@ -159,8 +226,9 @@ void test_search(int argc, char *argv[]) {
         return;
     }
 
-    printf("ip2region xdb searcher test program, "
-           "cache_policy: %s\ntype 'quit' to exit\n", cache_policy);
+    printf("ip2region xdb searcher test program\n"
+            "source xdb: %s (%s, %s)\n"
+            "type 'quit' to exit\n", db_file, xdb_get_version(&test.searcher)->name, cache_policy);
     while ( 1 ) {
         printf("ip2region>> ");
         get_line(stdin, line);
@@ -168,26 +236,31 @@ void test_search(int argc, char *argv[]) {
             continue;
         }
 
-        if (strcasecmp( line, "quit") == 0 ) {
+        if (strcmp(line, "quit") == 0 ) {
             break;
         }
 
-        if (xdb_check_ip(line, &ip) != 0) {
+        version = xdb_parse_ip(line, ip_bytes, sizeof(ip_bytes));
+        if (version == NULL) {
             printf("invalid ip address `%s`\n", line);
             continue;
         }
 
         s_time = xdb_now();
-        err = xdb_search(&test.searcher, ip, region, sizeof(region));
+        err = xdb_search(&test.searcher, ip_bytes, version->bytes, &test.region);
         if (err != 0) {
             printf("{err: %d, io_count: %d}\n", err, xdb_get_io_count(&test.searcher));
         } else {
             c_time = xdb_now() - s_time;
-            printf("{region: %s, io_count: %d, took: %ld μs}\n", region, xdb_get_io_count(&test.searcher), c_time);
+            printf("{region: %s, io_count: %d, took: %ld μs}\n", test.region.value, xdb_get_io_count(&test.searcher), c_time);
         }
+
+        // free the region
+        xdb_region_buffer_free(&test.region);
     }
 
     destroy_searcher_test(&test);
+    xdb_clean_winsock();
     printf("searcher test program exited, thanks for trying\n");
 }
 
@@ -197,13 +270,18 @@ void test_bench(int argc, char *argv[]) {
     char db_file[256] = {'\0'}, src_file[256] = {'\0'}, cache_policy[16] = {"vectorIndex"};
 
     FILE *handle;
-    char line[1024] = {'\0'}, sip_str[16] = {'\0'}, eip_str[16] = {'\0'};
-    char src_region[512] = {'\0'}, region_buffer[512] = {'\0'};
-    unsigned int sip, eip, mip, ip_list[5];
+    char line[1024] = {'\0'}, sip_str[INET6_ADDRSTRLEN+1] = {'\0'}, eip_str[INET6_ADDRSTRLEN+1] = {'\0'};
+    char src_region[512] = {'\0'};
     int count = 0, took;
     long s_time, t_time, c_time = 0;
-    searcher_test_t test;
 
+    // ip parse
+    xdb_version_t *s_version, *e_version;
+    bytes_ip_t sip_bytes[16] = {'\0'}, eip_bytes[16] = {'\0'};
+    string_ip_t ip_string[INET6_ADDRSTRLEN] = {'\0'};
+    bytes_ip_t *ip_list[2];
+
+    searcher_test_t test;
     for (i = 2; i < argc; i++) {
         r = argv[i];
         if (strlen(r) < 5) {
@@ -246,6 +324,13 @@ void test_bench(int argc, char *argv[]) {
         return;
     }
 
+    // init the win sock
+    err = xdb_init_winsock();
+    if (err != 0) {
+        printf("failed to init the winsock with errno=%d\n", err);
+        return;
+    }
+
     // printf("db_file=%s, src_file=%s, cache_policy=%s\n", db_file, src_file, cache_policy);
     s_time = xdb_now();
     err = init_searcher_test(&test, db_file, cache_policy);
@@ -262,50 +347,55 @@ void test_bench(int argc, char *argv[]) {
     }
 
     while(fgets(line, sizeof(line), handle) != NULL) {
-        n = sscanf(line, "%15[^|]|%15[^|]|%511[^\n]", sip_str, eip_str, src_region);
+        n = sscanf(line, "%46[^|]|%46[^|]|%511[^\n]", sip_str, eip_str, src_region);
         if (n != 3) {
             printf("invalid ip segment line `%s`\n", line);
             return;
         }
 
-        if (xdb_check_ip(sip_str, &sip) != 0) {
+        s_version = xdb_parse_ip(sip_str, sip_bytes, sizeof(sip_bytes));
+        if (s_version == NULL) {
             printf("invalid start ip `%s`\n", sip_str);
             return;
         }
 
-        if (xdb_check_ip(eip_str, &eip) != 0) {
+        e_version = xdb_parse_ip(eip_str, eip_bytes, sizeof(eip_bytes));
+        if (e_version == NULL) {
             printf("invalid end ip `%s`\n", sip_str);
             return;
         }
 
-        if (sip > eip) {
+        if (s_version->id != e_version->id) {
+            printf("start ip and end ip version not match for line `%s`\n", line);
+            return;
+        }
+
+        if (xdb_ip_sub_compare(sip_bytes, s_version->bytes, (string_ip_t *) eip_bytes, 0) > 0) {
             printf("start ip(%s) should not be greater than end ip(%s)\n", sip_str, eip_str);
             return;
         }
 
-        mip = xdb_mip(sip, eip);
-        ip_list[0] = sip;
-        ip_list[1] = xdb_mip(sip, mip);
-        ip_list[2] = mip;
-        ip_list[3] = xdb_mip(mip, eip);
-        ip_list[4] = eip;
-        for (i = 0; i < 5; i++) {
+        ip_list[0] = sip_bytes;
+        ip_list[1] = eip_bytes;
+        for (i = 0; i < 2; i++) {
             t_time = xdb_now();
-            err = xdb_search(&test.searcher, ip_list[i], region_buffer, sizeof(region_buffer));
+            err = xdb_search(&test.searcher, ip_list[i], s_version->bytes, &test.region);
+            c_time += xdb_now() - t_time;
             if (err != 0) {
-                xdb_long2ip(ip_list[i], sip_str);
-                printf("failed to search ip `%s` with errno=%d\n", sip_str, err);
+                xdb_ip_to_string(ip_list[i], s_version->bytes, ip_string, sizeof(ip_string));
+                printf("failed to search ip `%s` with errno=%d\n", ip_string, err);
                 return;
             }
-
-            c_time += xdb_now() - t_time;
 
             // check the region info
-            if (strcmp(region_buffer, src_region) != 0) {
-                xdb_long2ip(ip_list[i], sip_str);
-                printf("failed to search(%s) with (%s != %s)\n", sip_str, region_buffer, src_region);
+            if (strcmp(test.region.value, src_region) != 0) {
+                xdb_ip_to_string(ip_list[i], s_version->bytes, ip_string, sizeof(ip_string));
+                printf("failed to search(%s) with (%s != %s)\n", ip_string, test.region.value, src_region);
                 return;
             }
+
+            // free the region buffer
+            xdb_region_buffer_free(&test.region);
 
             count++;
         }
@@ -313,6 +403,7 @@ void test_bench(int argc, char *argv[]) {
 
     took = xdb_now() - s_time;
     destroy_searcher_test(&test);
+    xdb_clean_winsock();
     fclose(handle);
     printf("Bench finished, {cache_policy: %s, total: %d, took: %.3fs, cost: %d μs/op}\n",
            cache_policy, count, took/1e6, count == 0 ? 0 : (int)(c_time/count));

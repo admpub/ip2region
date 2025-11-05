@@ -3,20 +3,28 @@ package ip2region
 import (
 	"sync"
 
-	"github.com/admpub/ip2region/v2/binding/golang/xdb"
+	"github.com/admpub/ip2region/binding/golang/xdb"
 )
 
 func (a *Ip2Region) Reload(newPath ...string) error {
-	path := a.dbFile
+	dbPath := a.dbFile
 	if len(newPath) > 0 && len(newPath[0]) > 0 {
-		path = newPath[0]
+		dbPath = newPath[0]
 	}
-	cBuff, err := xdb.LoadContentFromFile(path)
+	var cBuff []byte
+	var vectorIndex []byte
+	var err error
+	if a.memoryMode {
+		cBuff, err = loadContent(dbPath)
+	} else {
+		vectorIndex, err = xdb.LoadVectorIndexFromFile(dbPath)
+	}
 	if err != nil {
 		return err
 	}
 	a.mu.Lock()
 	a.dbBuff = cBuff
+	a.vectorIndex = vectorIndex
 	a.mu.Unlock()
 	return nil
 }

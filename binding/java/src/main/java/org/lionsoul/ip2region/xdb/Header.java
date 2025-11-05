@@ -6,24 +6,28 @@
 
 package org.lionsoul.ip2region.xdb;
 
-
-import java.awt.image.SampleModel;
-
 public class Header {
     public final int version;
     public final int indexPolicy;
-    public final int createdAt;
-    public final int startIndexPtr;
-    public final int endIndexPtr;
+    public final long createdAt;
+    public final long startIndexPtr;
+    public final long endIndexPtr;
+
+    // since xdb 3.0 with IPv6 supporting
+    public final int ipVersion;
+    public final int runtimePtrBytes;
+
     public final byte[] buffer;
 
     public Header(byte[] buff) {
         assert buff.length >= 16;
-        version = Searcher.getInt2(buff, 0);
-        indexPolicy = Searcher.getInt2(buff, 2);
-        createdAt = Searcher.getInt(buff, 4);
-        startIndexPtr = Searcher.getInt(buff, 8);
-        endIndexPtr = Searcher.getInt(buff, 12);
+        version = LittleEndian.getUint16(buff, 0);
+        indexPolicy = LittleEndian.getUint16(buff, 2);
+        createdAt = LittleEndian.getUint32(buff, 4);
+        startIndexPtr = LittleEndian.getUint32(buff, 8);
+        endIndexPtr = LittleEndian.getUint32(buff, 12);
+        ipVersion = LittleEndian.getUint16(buff, 16);
+        runtimePtrBytes = LittleEndian.getUint16(buff, 18);
         buffer = buff;
     }
 
@@ -33,7 +37,9 @@ public class Header {
             "IndexPolicy: " + indexPolicy + ',' +
             "CreatedAt: " + createdAt + ',' +
             "StartIndexPtr: " + startIndexPtr + ',' +
-            "EndIndexPtr: " + endIndexPtr +
+            "EndIndexPtr: " + endIndexPtr + ',' + 
+            "IPVersion: " + ipVersion + ',' + 
+            "RuntimePtrBytes: " + runtimePtrBytes +
         '}';
     }
 }
