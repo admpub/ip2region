@@ -10,7 +10,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/admpub/ip2region/maker/golang/xdb"
+	"github.com/admpub/ip2region/v3/maker/golang/xdb"
 )
 
 // script to do the xdb generate

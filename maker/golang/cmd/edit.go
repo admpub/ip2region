@@ -13,7 +13,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/admpub/ip2region/maker/golang/xdb"
+	"github.com/admpub/ip2region/v3/maker/golang/xdb"
 )
 
 // source ip data editor

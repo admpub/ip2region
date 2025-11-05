@@ -9,7 +9,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/admpub/ip2region/maker/golang/cmd"
+	"github.com/admpub/ip2region/v3/maker/golang/cmd"
 )
 
 func main() {
