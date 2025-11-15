@@ -166,7 +166,7 @@ func (s *Searcher) SearchByStr(str string) (string, error) {
 func (s *Searcher) Search(ip []byte) (string, error) {
 	// ip version check
 	if len(ip) != s.version.Bytes {
-		return "", fmt.Errorf("invalid ip address(%s expected)", s.version.Name)
+		return "", fmt.Errorf("%w(%s expected)", ErrInvalidIPAddress, s.version.Name)
 	}
 
 	// reset the global ioCount

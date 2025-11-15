@@ -27,6 +27,10 @@ func TestRace(t *testing.T) {
 		panic(err)
 	}
 	testIP := `219.133.111.87`
+	_, err = region.MemorySearchString(testIP)
+	if !xdb.IsInvalidIPAddress(err) {
+		t.Error(err)
+	}
 	if region.dbVer.Id == xdb.IPv6VersionNo {
 		testIP = `240e:87c:892:ffff:ffff:ffff:ffff:ffff`
 	}

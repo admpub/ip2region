@@ -20,7 +20,7 @@ import (
 func ParseIP(ip string) ([]byte, error) {
 	parsedIP := net.ParseIP(ip)
 	if parsedIP == nil {
-		return nil, fmt.Errorf("invalid ip address: %s", ip)
+		return nil, fmt.Errorf("%w: %s", ErrInvalidIPAddress, ip)
 	}
 
 	v4 := parsedIP.To4()
@@ -33,7 +33,7 @@ func ParseIP(ip string) ([]byte, error) {
 		return v6, nil
 	}
 
-	return nil, fmt.Errorf("invalid ip address: %s", ip)
+	return nil, fmt.Errorf("%w: %s", ErrInvalidIPAddress, ip)
 }
 
 func IP2String(ip []byte) string {
