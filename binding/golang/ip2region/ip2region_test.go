@@ -21,8 +21,16 @@ func BenchmarkMemorySearch(B *testing.B) {
 	region.Close()
 }
 
-func TestRace(t *testing.T) {
-	region, err := New("../../../data/ip2region_v6.xdb", false)
+func TestV4Only(t *testing.T) {
+	testRace(t, `4`)
+}
+
+func TestV6Only(t *testing.T) {
+	testRace(t, `6`)
+}
+
+func testRace(t *testing.T, ipVer string) {
+	region, err := New("../../../data/ip2region_v"+ipVer+".xdb", false)
 	if err != nil {
 		panic(err)
 	}
